@@ -1,0 +1,69 @@
+<%- include('../partials/header', { titulo: 'Usuarios' }) %>
+
+<div class="page-header">
+  <h2>👥 Gestión de Usuarios</h2>
+  <% if (user.rol === 'SuperAdmin') { %>
+    <a href="/usuarios/nuevo" class="btn btn-primary">+ Nuevo Usuario</a>
+  <% } %>
+</div>
+
+<% if (success) { %>
+  <div class="alert alert-success"><%= success %></div>
+<% } %>
+
+<div class="table-wrapper">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Username</th>
+        <th>Email</th>
+        <th>Rol</th>
+        <th>Estado</th>
+        <th>Último Login</th>
+        <th>IP Último Login</th>
+        <th>Miembro desde</th>
+        <% if (user.rol === 'SuperAdmin') { %>
+          <th>Acciones</th>
+        <% } %>
+      </tr>
+    </thead>
+    <tbody>
+      <% if (usuarios.length === 0) { %>
+        <tr><td colspan="9" class="text-center text-muted">No hay usuarios registrados.</td></tr>
+      <% } %>
+      <% usuarios.forEach(u => { %>
+      <tr>
+        <td><%= u.id %></td>
+        <td><strong><%= u.username %></strong></td>
+        <td><%= u.email %></td>
+        <td><span class="badge badge-<%= u.rol.toLowerCase() %>"><%= u.rol %></span></td>
+        <td>
+          <% if (u.activo) { %>
+            <span class="badge badge-success">Activo</span>
+          <% } else { %>
+            <span class="badge badge-danger">Inactivo</span>
+          <% } %>
+        </td>
+        <td><%= u.ultimo_login ? new Date(u.ultimo_login).toLocaleString('es-CR') : '—' %></td>
+        <td><code><%= u.ultimo_login_ip || '—' %></code></td>
+        <td><%= new Date(u.created_at).toLocaleDateString('es-CR') %></td>
+        <% if (user.rol === 'SuperAdmin') { %>
+        <td class="actions">
+          <a href="/usuarios/<%= u.id %>/editar" class="btn btn-sm btn-secondary">Editar</a>
+          <% if (u.id !== user.id) { %>
+          <form action="/usuarios/<%= u.id %>/eliminar" method="POST" style="display:inline"
+                onsubmit="return confirm('¿Eliminar al usuario <%= u.username %>?')">
+            <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+            <button type="submit" class="btn btn-sm btn-danger">Eliminar</button>
+          </form>
+          <% } %>
+        </td>
+        <% } %>
+      </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</div>
+
+<%- include('../partials/footer') %>

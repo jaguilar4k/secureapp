@@ -1,0 +1,46 @@
+version: '3.9'
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: secureapp_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: secureapp
+      POSTGRES_USER: appuser
+      POSTGRES_PASSWORD: StrongPass123!
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U appuser -d secureapp"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    container_name: secureapp_app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: secureapp
+      DB_USER: appuser
+      DB_PASSWORD: StrongPass123!
+      SESSION_SECRET: superSecretSessionKey_ChangeInProduction_2026!
+      JWT_SECRET: superSecretJWTKey_ChangeInProduction_2026!
+      JWT_EXPIRY: 3600
+      TRUST_PROXY: 1
+      SESSION_COOKIE_SECURE: auto
+    volumes:
+      - ./src:/app/src:ro
+
+volumes:
+  pgdata:

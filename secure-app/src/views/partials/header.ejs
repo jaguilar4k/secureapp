@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= typeof titulo !== 'undefined' ? titulo + ' | ' : '' %>SecureApp</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<% if (user) { %>
+<nav class="navbar">
+  <div class="nav-brand">🔒 SecureApp</div>
+  <div class="nav-links">
+    <a href="/dashboard">Dashboard</a>
+    <a href="/productos">Productos</a>
+    <% if (['SuperAdmin','Auditor','Registrador'].includes(user.rol)) { %>
+      <a href="/usuarios">Usuarios</a>
+    <% } %>
+    <% if (user.rol === 'SuperAdmin') { %>
+      <a href="/auditoria">Auditoría</a>
+    <% } %>
+  </div>
+  <div class="nav-user">
+    <span class="badge badge-<%= user.rol.toLowerCase() %>"><%= user.rol %></span>
+    <span><%= user.username %></span>
+    <form action="/auth/logout" method="POST" style="display:inline">
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+      <button type="submit" class="btn-link">Salir</button>
+    </form>
+  </div>
+</nav>
+<% } %>
+
+<main class="container">

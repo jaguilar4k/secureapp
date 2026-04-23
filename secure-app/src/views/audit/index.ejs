@@ -1,0 +1,63 @@
+<%- include('../partials/header', { titulo: 'Log de Auditoría' }) %>
+
+<div class="page-header">
+  <h2>📋 Log de Auditoría</h2>
+  <span class="text-muted">Solo visible para SuperAdmin · RF-06</span>
+</div>
+
+<div class="table-wrapper">
+  <table class="table table-sm">
+    <thead>
+      <tr>
+        <th>Timestamp</th>
+        <th>IP Origen</th>
+        <th>Usuario</th>
+        <th>Evento</th>
+        <th>Detalle</th>
+        <th>Ruta</th>
+        <th>Resultado</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% if (logs.length === 0) { %>
+        <tr><td colspan="7" class="text-center text-muted">No hay eventos registrados.</td></tr>
+      <% } %>
+      <% logs.forEach(log => { %>
+      <tr class="log-row log-<%= log.resultado || 'info' %>">
+        <td class="nowrap"><%= new Date(log.timestamp).toLocaleString('es-CR') %></td>
+        <td><code><%= log.ip_origen || '—' %></code></td>
+        <td><%= log.username || '—' %></td>
+        <td><span class="event-tag"><%= log.evento %></span></td>
+        <td class="truncate"><%= log.detalle || '—' %></td>
+        <td><code class="route"><%= log.ruta || '—' %></code></td>
+        <td>
+          <% if (log.resultado === 'exitoso') { %>
+            <span class="badge badge-success">✅ Exitoso</span>
+          <% } else if (log.resultado === 'fallido') { %>
+            <span class="badge badge-danger">❌ Fallido</span>
+          <% } else if (log.resultado === 'denegado') { %>
+            <span class="badge badge-warning">🚫 Denegado</span>
+          <% } else { %>
+            <span class="badge">—</span>
+          <% } %>
+        </td>
+      </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</div>
+
+<!-- Paginación -->
+<% if (totalPages > 1) { %>
+<div class="pagination">
+  <% if (page > 1) { %>
+    <a href="/auditoria?page=<%= page - 1 %>" class="btn btn-sm btn-secondary">← Anterior</a>
+  <% } %>
+  <span>Página <%= page %> de <%= totalPages %></span>
+  <% if (page < totalPages) { %>
+    <a href="/auditoria?page=<%= page + 1 %>" class="btn btn-sm btn-secondary">Siguiente →</a>
+  <% } %>
+</div>
+<% } %>
+
+<%- include('../partials/footer') %>

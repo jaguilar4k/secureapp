@@ -1,0 +1,60 @@
+<%- include('../partials/header', { titulo: 'Productos' }) %>
+
+<div class="page-header">
+  <h2>📦 Gestión de Productos</h2>
+  <% if (['SuperAdmin','Registrador'].includes(user.rol)) { %>
+    <a href="/productos/nuevo" class="btn btn-primary">+ Nuevo Producto</a>
+  <% } %>
+</div>
+
+<% if (success) { %>
+  <div class="alert alert-success"><%= success %></div>
+<% } %>
+
+<div class="table-wrapper">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Código</th>
+        <th>Nombre</th>
+        <th>Descripción</th>
+        <th>Cantidad</th>
+        <th>Precio</th>
+        <th>Creado por</th>
+        <th>Fecha</th>
+        <% if (['SuperAdmin','Registrador'].includes(user.rol)) { %>
+          <th>Acciones</th>
+        <% } %>
+      </tr>
+    </thead>
+    <tbody>
+      <% if (productos.length === 0) { %>
+        <tr><td colspan="8" class="text-center text-muted">No hay productos registrados.</td></tr>
+      <% } %>
+      <% productos.forEach(p => { %>
+      <tr>
+        <!-- RS-02: EJS escapa automáticamente el output con <%= %> -->
+        <td><code><%= p.codigo %></code></td>
+        <td><%= p.nombre %></td>
+        <td class="truncate"><%= p.descripcion || '—' %></td>
+        <td><%= p.cantidad %></td>
+        <td>₡ <%= parseFloat(p.precio).toLocaleString('es-CR', {minimumFractionDigits:2}) %></td>
+        <td><%= p.creado_por_nombre || '—' %></td>
+        <td><%= new Date(p.created_at).toLocaleDateString('es-CR') %></td>
+        <% if (['SuperAdmin','Registrador'].includes(user.rol)) { %>
+        <td class="actions">
+          <a href="/productos/<%= p.id %>/editar" class="btn btn-sm btn-secondary">Editar</a>
+          <form action="/productos/<%= p.id %>/eliminar" method="POST" style="display:inline"
+                onsubmit="return confirm('¿Eliminar este producto?')">
+            <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+            <button type="submit" class="btn btn-sm btn-danger">Eliminar</button>
+          </form>
+        </td>
+        <% } %>
+      </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</div>
+
+<%- include('../partials/footer') %>

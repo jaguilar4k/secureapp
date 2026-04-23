@@ -1,0 +1,296 @@
+openapi: 3.0.3
+info:
+  title: SecureApp API REST
+  description: |
+    API REST del proyecto Blue Team – ISW-1013 Seguridad 2026.
+    Todos los endpoints (excepto `/api/auth/login`) requieren un JWT válido
+    en el header `Authorization: Bearer <token>`.
+    
+    **Credenciales por defecto (dev):**
+    - Usuario: `admin` | Contraseña: `Admin1234!`
+    
+    **Flujo de autenticación:**
+    1. `POST /api/auth/login` → obtener token JWT
+    2. Incluir `Authorization: Bearer <token>` en todas las peticiones
+  version: "3.0.0"
+  contact:
+    name: Blue Team – UTN ISW-1013
+
+servers:
+  - url: http://localhost:3000
+    description: Desarrollo local
+  - url: https://{ngrok_id}.ngrok-free.app
+    description: Ambiente público (ngrok)
+    variables:
+      ngrok_id:
+        default: abc123
+        description: ID generado por ngrok
+
+tags:
+  - name: auth
+    description: Autenticación y emisión de JWT
+  - name: productos
+    description: CRUD de productos (RF-03, RF-07)
+  - name: usuarios
+    description: Gestión de usuarios (RF-04, RF-07)
+
+# ── Seguridad global ─────────────────────────────────────────────────────────
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: "JWT obtenido en POST /api/auth/login"
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error: { type: string }
+
+    TokenResponse:
+      type: object
+      properties:
+        token:     { type: string, description: JWT firmado HS256 }
+        tokenType: { type: string, example: Bearer }
+        expiresIn: { type: integer, description: Segundos hasta expiración, example: 3600 }
+        user:
+          type: object
+          properties:
+            id:       { type: integer }
+            username: { type: string }
+            email:    { type: string }
+            rol:      { type: string, enum: [SuperAdmin, Auditor, Registrador] }
+
+    Producto:
+      type: object
+      properties:
+        id:          { type: integer }
+        codigo:      { type: string, pattern: '^[A-Za-z0-9\-_]{1,20}$' }
+        nombre:      { type: string, maxLength: 100 }
+        descripcion: { type: string, maxLength: 500, nullable: true }
+        cantidad:    { type: integer, minimum: 0 }
+        precio:      { type: number, format: float, minimum: 0 }
+        creado_por:  { type: integer, nullable: true }
+        created_at:  { type: string, format: date-time }
+        updated_at:  { type: string, format: date-time }
+
+    ProductoInput:
+      type: object
+      required: [codigo, nombre, cantidad, precio]
+      properties:
+        codigo:      { type: string, pattern: '^[A-Za-z0-9\-_]{1,20}$' }
+        nombre:      { type: string, maxLength: 100 }
+        descripcion: { type: string, maxLength: 500 }
+        cantidad:    { type: integer, minimum: 0 }
+        precio:      { type: number, format: float, minimum: 0 }
+
+    Usuario:
+      type: object
+      properties:
+        id:              { type: integer }
+        username:        { type: string }
+        email:           { type: string }
+        rol:             { type: string, enum: [SuperAdmin, Auditor, Registrador] }
+        activo:          { type: boolean }
+        ultimo_login:    { type: string, format: date-time, nullable: true }
+        ultimo_login_ip: { type: string, nullable: true }
+
+    UsuarioInput:
+      type: object
+      required: [username, email, password, rol_id]
+      properties:
+        username: { type: string, minLength: 3, maxLength: 50 }
+        email:    { type: string, format: email }
+        password: { type: string, minLength: 8, description: "Mínimo 8 chars, 1 mayúscula, 1 número" }
+        rol_id:   { type: integer, description: "1=SuperAdmin, 2=Auditor, 3=Registrador" }
+
+security:
+  - BearerAuth: []
+
+# ── Paths ─────────────────────────────────────────────────────────────────────
+paths:
+
+  /api/auth/login:
+    post:
+      tags: [auth]
+      summary: Iniciar sesión y obtener JWT
+      description: |
+        Emite un JWT firmado con HS256 y expiración de 1 hora.
+        **RS-05:** El servidor rechaza tokens con algoritmo 'none'.
+        **RS-07:** Bloqueado después de 5 intentos fallidos por 5 minutos.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username: { type: string, example: admin }
+                password: { type: string, example: Admin1234! }
+      responses:
+        '200':
+          description: Login exitoso – devuelve JWT
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenResponse' }
+        '401':
+          description: Credenciales incorrectas
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '429':
+          description: Rate limit – demasiados intentos
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /api/productos:
+    get:
+      tags: [productos]
+      summary: Listar todos los productos
+      description: Roles permitidos: SuperAdmin, Auditor, Registrador
+      responses:
+        '200':
+          description: Lista de productos
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Producto' }
+        '401': { description: No autenticado }
+        '403': { description: Sin permisos }
+
+    post:
+      tags: [productos]
+      summary: Crear un nuevo producto
+      description: Roles permitidos: SuperAdmin, Registrador
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ProductoInput' }
+            example:
+              codigo: PROD-001
+              nombre: Teclado Mecánico
+              descripcion: Switch Cherry MX Red
+              cantidad: 50
+              precio: 45000.00
+      responses:
+        '201':
+          description: Producto creado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Producto' }
+        '400': { description: Datos inválidos }
+        '409': { description: Código de producto duplicado }
+
+  /api/productos/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+
+    get:
+      tags: [productos]
+      summary: Obtener un producto por ID
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Producto' }
+        '404': { description: No encontrado }
+
+    put:
+      tags: [productos]
+      summary: Actualizar un producto
+      description: Roles permitidos: SuperAdmin, Registrador
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ProductoInput' }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Producto' }
+        '400': { description: Datos inválidos }
+        '404': { description: No encontrado }
+
+    delete:
+      tags: [productos]
+      summary: Eliminar un producto
+      description: Roles permitidos: SuperAdmin, Registrador
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+        '404': { description: No encontrado }
+
+  /api/usuarios:
+    get:
+      tags: [usuarios]
+      summary: Listar usuarios
+      description: Roles permitidos: SuperAdmin, Auditor, Registrador
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Usuario' }
+
+    post:
+      tags: [usuarios]
+      summary: Crear usuario (solo SuperAdmin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UsuarioInput' }
+      responses:
+        '201':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Usuario' }
+        '409': { description: Username o email ya existe }
+
+  /api/usuarios/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+
+    get:
+      tags: [usuarios]
+      summary: Obtener usuario por ID (solo SuperAdmin)
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Usuario' }
+        '404': { description: No encontrado }
+
+    delete:
+      tags: [usuarios]
+      summary: Eliminar usuario (solo SuperAdmin)
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+        '400': { description: No puedes eliminarte a ti mismo }
+        '404': { description: No encontrado }

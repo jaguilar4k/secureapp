@@ -1,0 +1,10 @@
+<%- include('partials/header', { titulo: titulo || 'Error' }) %>
+
+<div class="error-page">
+  <div class="error-icon">⚠️</div>
+  <h2><%= titulo || 'Error' %></h2>
+  <p class="error-msg"><%= mensaje || 'Ocurrió un error inesperado.' %></p>
+  <a href="/dashboard" class="btn btn-primary">← Volver al Dashboard</a>
+</div>
+
+<%- include('partials/footer') %>

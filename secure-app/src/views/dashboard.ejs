@@ -1,0 +1,65 @@
+<%- include('partials/header', { titulo: 'Dashboard' }) %>
+
+<div class="page-header">
+  <h2>Dashboard</h2>
+  <p>Bienvenido, <strong><%= user.username %></strong>. Rol: <span class="badge badge-<%= user.rol.toLowerCase() %>"><%= user.rol %></span></p>
+</div>
+
+<div class="cards-grid">
+
+  <% if (['SuperAdmin','Registrador','Auditor'].includes(user.rol)) { %>
+  <a href="/productos" class="dashboard-card">
+    <div class="card-icon">📦</div>
+    <div class="card-title">Productos</div>
+    <div class="card-desc">
+      <% if (user.rol === 'Auditor') { %>Solo lectura
+      <% } else { %>CRUD completo
+      <% } %>
+    </div>
+  </a>
+  <% } %>
+
+  <% if (['SuperAdmin','Auditor','Registrador'].includes(user.rol)) { %>
+  <a href="/usuarios" class="dashboard-card">
+    <div class="card-icon">👥</div>
+    <div class="card-title">Usuarios</div>
+    <div class="card-desc">
+      <% if (user.rol === 'SuperAdmin') { %>CRUD + roles
+      <% } else { %>Solo lectura
+      <% } %>
+    </div>
+  </a>
+  <% } %>
+
+  <% if (user.rol === 'SuperAdmin') { %>
+  <a href="/auditoria" class="dashboard-card">
+    <div class="card-icon">📋</div>
+    <div class="card-title">Log de Auditoría</div>
+    <div class="card-desc">Eventos de seguridad</div>
+  </a>
+  <% } %>
+
+  <div class="dashboard-card info-card">
+    <div class="card-icon">🛡️</div>
+    <div class="card-title">API REST</div>
+    <div class="card-desc">JWT · <code>POST /api/auth/login</code></div>
+  </div>
+
+</div>
+
+<div class="info-box mt-2">
+  <h3>Controles de seguridad activos</h3>
+  <ul>
+    <li>✅ Contraseñas con bcrypt (cost=12)</li>
+    <li>✅ Protección CSRF en todos los formularios</li>
+    <li>✅ Headers HTTP: CSP, X-Frame-Options, HSTS, nosniff</li>
+    <li>✅ Rate limiting en login (5 intentos / 5 min)</li>
+    <li>✅ Sesión expira en 5 min de inactividad</li>
+    <li>✅ JWT firmado HS256 · expiry 1h · algoritmo 'none' rechazado</li>
+    <li>✅ RBAC validado en backend (no solo en UI)</li>
+    <li>✅ Log de auditoría completo</li>
+    <li>✅ Prepared Statements (nunca concatenación SQL)</li>
+  </ul>
+</div>
+
+<%- include('partials/footer') %>

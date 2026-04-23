@@ -1,0 +1,93 @@
+<%- include('../partials/header', { titulo: titulo }) %>
+
+<div class="page-header">
+  <h2><%= titulo %></h2>
+  <a href="/usuarios" class="btn btn-secondary">← Volver</a>
+</div>
+
+<% if (errors && errors.length) { %>
+  <div class="alert alert-danger">
+    <ul class="mb-0">
+      <% errors.forEach(e => { %><li><%= e.msg %></li><% }) %>
+    </ul>
+  </div>
+<% } %>
+
+<div class="form-card">
+  <form
+    action="/usuarios/<%= usuario.id ? usuario.id + '/editar' : 'nuevo' %>"
+    method="POST"
+    novalidate
+  >
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="username">Username <span class="required">*</span></label>
+        <input
+          type="text"
+          id="username"
+          name="username"
+          class="form-control"
+          value="<%= usuario.username || '' %>"
+          minlength="3"
+          maxlength="50"
+          required
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="email">Email <span class="required">*</span></label>
+        <input
+          type="email"
+          id="email"
+          name="email"
+          class="form-control"
+          value="<%= usuario.email || '' %>"
+          maxlength="100"
+          required
+        >
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="password">
+        Contraseña <span class="required">*</span>
+        <% if (usuario.id) { %>
+          <small class="text-muted">(dejar en blanco para no cambiar)</small>
+        <% } %>
+      </label>
+      <input
+        type="password"
+        id="password"
+        name="password"
+        class="form-control"
+        minlength="8"
+        autocomplete="new-password"
+        <% if (!usuario.id) { %>required<% } %>
+      >
+      <small class="form-hint">Mínimo 8 caracteres, una mayúscula y un número.</small>
+    </div>
+
+    <div class="form-group">
+      <label for="rol_id">Rol <span class="required">*</span></label>
+      <select id="rol_id" name="rol_id" class="form-control" required>
+        <option value="">— Seleccionar rol —</option>
+        <% roles.forEach(r => { %>
+          <option value="<%= r.id %>" <%= (usuario.rol_id == r.id) ? 'selected' : '' %>>
+            <%= r.nombre %> — <%= r.descripcion %>
+          </option>
+        <% }) %>
+      </select>
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">
+        <%= usuario.id ? 'Guardar Cambios' : 'Crear Usuario' %>
+      </button>
+      <a href="/usuarios" class="btn btn-secondary">Cancelar</a>
+    </div>
+  </form>
+</div>
+
+<%- include('../partials/footer') %>
